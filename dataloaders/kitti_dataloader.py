@@ -11,35 +11,40 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 
+def readPathFiles(path):
+    left_right_paths = []
+
+    with open(path, 'rb') as f:
+        lines = f.readlines()
+
+        for line in lines:
+            left_path = line.split()[0]
+            right_path = line.split()[1]
+
+            left_right_paths.append((left_path, right_path))
+
+    return left_right_paths
+
+
 class KittiLoader(Dataset):
     def __init__(self, root_dir, mode, transform=None):
-        left_dir = os.path.join(root_dir, 'image_02/data/')
-        self.left_paths = sorted([os.path.join(left_dir, fname) for fname\
-                           in os.listdir(left_dir)])
+        self.root_dir = root_dir
+
         if mode == 'train':
-            right_dir = os.path.join(root_dir, 'image_03/data/')
-            self.right_paths = sorted([os.path.join(right_dir, fname) for fname\
-                                in os.listdir(right_dir)])
-            assert len(self.right_paths) == len(self.left_paths)
+            self.left_right_paths = readPathFiles('./eigen_train_files.txt')
+        elif mode == 'val':
+            self.left_right_paths = readPathFiles('./eigen_val_files.txt')
+        elif mode == 'test':
+            self.left_right_paths = readPathFiles('./eigen_test_files.txt')
+        else:
+            print('no dataloader mode named as ', mode)
+            exit(-1)
+
         self.transform = transform
         self.mode = mode
 
-
     def __len__(self):
-        return len(self.left_paths)
+        return len(self.left_right_paths)
 
     def __getitem__(self, idx):
-        left_image = Image.open(self.left_paths[idx])
-        if self.mode == 'train':
-            right_image = Image.open(self.right_paths[idx])
-            sample = {'left_image': left_image, 'right_image': right_image}
-
-            if self.transform:
-                sample = self.transform(sample)
-                return sample
-            else:
-                return sample
-        else:
-            if self.transform:
-                left_image = self.transform(left_image)
-            return left_image
+        left_path, right_path = 
