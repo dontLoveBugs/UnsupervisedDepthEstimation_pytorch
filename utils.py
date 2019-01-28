@@ -11,7 +11,7 @@ import os
 from torch.utils.data import DataLoader, ConcatDataset
 
 from network.models_resnet import Resnet18_md, Resnet50_md, ResnetModel
-from dataloaders.kitti_dataloader import KittiLoader
+from dataloaders.kitti_dataloader import KittiFolder
 from dataloaders.transforms import image_transforms
 
 
@@ -38,26 +38,23 @@ def get_model(model, input_channels=3, pretrained=False):
     return out_model
 
 
-def prepare_dataloader(data_directory, mode, augment_parameters,
+def prepare_dataloader(root_dir, mode, augment_parameters,
                        do_augmentation, batch_size, size, num_workers):
-    data_dirs = os.listdir(data_directory)
     data_transform = image_transforms(
         mode=mode,
         augment_parameters=augment_parameters,
         do_augmentation=do_augmentation,
         size=size)
-    datasets = [KittiLoader(os.path.join(data_directory,
-                                         data_dir), mode, transform=data_transform)
-                for data_dir in data_dirs]
-    dataset = ConcatDataset(datasets)
-    n_img = len(dataset)
-    print('Use a dataset with', n_img, 'images')
+
     if mode == 'train':
-        loader = DataLoader(dataset, batch_size=batch_size,
-                            shuffle=True, num_workers=num_workers,
-                            pin_memory=True)
+        data_set = KittiFolder(root_dir=root_dir, mode=mode, transform=data_transform)
+        loader = torch.utils.data.DataLoader(data_set, batch_size=batch_size, shuffle=True,
+                                             num_workers=num_workers, pin_memory=True)
+        n_img = len(data_set)
+
     else:
-        loader = DataLoader(dataset, batch_size=batch_size,
-                            shuffle=False, num_workers=num_workers,
-                            pin_memory=True)
+        data_set = KittiFolder(root_dir=root_dir, mode=mode, transform=data_transform)
+        loader = torch.utils.data.DataLoader(data_set, batch_size=1, shuffle=False,
+                                             num_workers=num_workers, pin_memory=True)
+        n_img = len(data_set)
     return n_img, loader
